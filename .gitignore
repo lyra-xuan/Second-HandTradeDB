@@ -1,0 +1,41 @@
+# ---- Node / Next.js ----
+node_modules/
+.next/
+out/
+build/
+dist/
+*.log
+npm-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ---- Python / FastAPI ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---- 环境变量与密钥 ----
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# ---- 数据库（不提交真实数据与备份） ----
+*.dump
+*.db
+*.sqlite3
+*.sql.bak
+
+# ---- IDE / 系统 ----
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
