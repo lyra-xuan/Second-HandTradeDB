@@ -50,3 +50,11 @@ class Base(DeclarativeBase):
     })
 
 from . import user
+from . import category
+from . import condition_level
+from . import trade_place
+from . import product
+from . import product_image
+from . import favorite
+from . import order
+from . import admin_log

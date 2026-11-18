@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import Annotated
-from dependencies import get_session
+from dependencies import get_session, get_current_user
 from models import AsyncSession
 from repository.user_repo import UserRepository, User
 from schemas import ResponseOut
-from schemas.user import UserCreateSchema, RegisterIn, LoginIn, LoginOut, UserSchema
+from schemas.user import UserCreateSchema, RegisterIn, LoginIn, LoginOut, UserSchema, UserUpdateIn
 from core.auth import AuthHandler
 
 router = APIRouter(prefix="/auth")
@@ -70,3 +70,19 @@ async def get_me(
     if not user:
         raise HTTPException(404, detail="用户不存在！")
     return user
+
+@router.patch('/me', response_model=UserSchema)
+async def update_me(
+    data: UserUpdateIn,
+    user: Annotated[User, Depends(get_current_user)],
+    session: Annotated[AsyncSession, Depends(get_session)],
+):
+    """U3 个人资料修改：昵称/头像/联系方式，学号邮箱密码不可改。"""
+    return await UserRepository(session=session).update(user, data)
+
+@router.post('/logout', response_model=ResponseOut)
+async def logout(
+    user_id: Annotated[int, Depends(auth_handler.auth_access_dependency)],
+):
+    """JWT 无状态：服务端不保存会话，校验 Token 后由前端清除本地 Token。"""
+    return ResponseOut()
