@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from models import AsyncSessionFactory
 
 from routers.auth_router import router as auth_router
+from routers.dict_router import router as dict_router
 from routers.product_router import router as product_router
 from routers.order_router import router as order_router
 from routers.favorite_router import router as favorite_router
@@ -70,6 +71,7 @@ app.add_middleware(DBSessionMiddleware)
 
 API_PREFIX = "/api"
 app.include_router(auth_router, prefix=API_PREFIX)
+app.include_router(dict_router, prefix=API_PREFIX)
 app.include_router(product_router, prefix=API_PREFIX)
 app.include_router(order_router, prefix=API_PREFIX)
 app.include_router(favorite_router, prefix=API_PREFIX)
