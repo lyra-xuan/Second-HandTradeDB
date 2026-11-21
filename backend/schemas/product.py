@@ -72,6 +72,9 @@ class ProductDetail(BaseModel):
     created_at: datetime
     updated_at: datetime
     seller: SellerBrief
+    category_id: int
+    condition_id: int
+    place_id: int | None = None
     category_name: str
     condition_name: str
     place_name: str | None = None
