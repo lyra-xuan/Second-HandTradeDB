@@ -25,7 +25,7 @@ SELECT
   (SELECT IFNULL(SUM(p.`price`), 0)
      FROM `orders` o JOIN `products` p ON o.`product_id` = p.`id`
      WHERE o.`status` = 3)                                          AS trade_amount,
-  (SELECT CONCAT(ROUND(100 * SUM(`status` = 3) / COUNT(*), 1), '%')
+  (SELECT IFNULL(CONCAT(ROUND(100 * SUM(`status` = 3) / COUNT(*), 1), '%'), '0%')
      FROM `orders`)                                                 AS finish_rate;
 
 -- ------------------------------------------------------------
