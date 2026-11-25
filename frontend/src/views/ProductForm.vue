@@ -2,11 +2,48 @@
 import {ref,reactive,onMounted} from 'vue'
 import {useRoute,useRouter} from 'vue-router'
 import {api,auth} from '../api'
-import {categories,conditions,places,safeImage} from '../domain'
-const route=useRoute(),router=useRouter(),editing=Boolean(route.params.id),busy=ref(false),loading=ref(editing),ready=ref(!editing),error=ref(''),urls=ref('')
+import {safeImage} from '../domain'
+const route=useRoute(),router=useRouter(),editing=Boolean(route.params.id),busy=ref(false),loading=ref(true),ready=ref(false),error=ref(''),urls=ref('')
 const form=reactive({title:'',description:'',price:'',category_id:'',condition_id:'',place_id:''})
-function idFor(list,name){const i=list.indexOf(name);return i<0?'':i+1}
-onMounted(async()=>{if(!editing)return;try{const p=await api(`/products/${route.params.id}`);if(p.seller.id!==auth.user?.id)throw new Error('只能编辑自己发布的商品');if(p.status===4)throw new Error('已下架商品不可编辑');Object.assign(form,{title:p.title,description:p.description||'',price:p.price,category_id:idFor(categories,p.category_name),condition_id:idFor(conditions,p.condition_name),place_id:idFor(places,p.place_name)});urls.value=p.images.join('\n');ready.value=true}catch(e){error.value=e.message}finally{loading.value=false}})
+const categories = ref([])
+const conditions = ref([])
+const places = ref([])
+
+async function loadForm() {
+  loading.value = true
+  error.value = ''
+  try {
+    const [categoryOptions, conditionOptions, placeOptions, product] = await Promise.all([
+      api('/categories'),
+      api('/conditions'),
+      api('/places'),
+      editing ? api('/products/' + route.params.id) : null,
+    ])
+    categories.value = categoryOptions
+    conditions.value = conditionOptions
+    places.value = placeOptions
+    if (product) {
+      if (product.seller.id !== auth.user?.id) throw new Error('只能编辑自己发布的商品')
+      if (product.status === 4) throw new Error('已下架商品不可编辑')
+      Object.assign(form, {
+        title: product.title,
+        description: product.description || '',
+        price: product.price,
+        category_id: product.category_id,
+        condition_id: product.condition_id,
+        place_id: product.place_id ?? '',
+      })
+      urls.value = product.images.join('\n')
+    }
+    ready.value = true
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(loadForm)
 async function submit(){busy.value=true;error.value='';try{const images=urls.value.split('\n').map(x=>x.trim()).filter(Boolean);if(images.length>9)throw new Error('最多填写 9 张图片地址');if(images.some(x=>!safeImage(x)||x.length>255))throw new Error('图片地址须为 http(s) 或站内路径，且不超过 255 字符');const body={...form,price:Number(form.price),category_id:Number(form.category_id),condition_id:Number(form.condition_id),place_id:form.place_id?Number(form.place_id):null,images};const result=await api(editing?`/products/${route.params.id}`:'/products',{method:editing?'PUT':'POST',body});router.push(`/products/${editing?route.params.id:result.id}`)}catch(e){error.value=e.message}finally{busy.value=false}}
 </script>
-<template><div class="section-heading"><div><h1>{{editing?'编辑商品':'发布我的闲置'}}</h1></div></div><p v-if="loading" class="empty">加载中…</p><p v-if="error" class="error" role="alert">{{error}}</p><form v-if="ready" class="panel form-panel" @submit.prevent="submit"><label>商品标题<input v-model.trim="form.title" required maxlength="100" placeholder="例如：九成新高等数学教材"></label><div class="form-grid"><label>价格（元）<input v-model="form.price" type="number" required min="0.01" max="99999.99" step="0.01"></label><label>商品分类<select v-model="form.category_id" required><option disabled value="">请选择</option><option v-for="(name,i) in categories" :key="name" :value="i+1">{{name}}</option></select></label><label>成色<select v-model="form.condition_id" required><option disabled value="">请选择</option><option v-for="(name,i) in conditions" :key="name" :value="i+1">{{name}}</option></select></label><label>交易地点<select v-model="form.place_id"><option value="">双方商议</option><option v-for="(name,i) in places" :key="name" :value="i+1">{{name}}</option></select></label></div><label>商品描述<textarea v-model="form.description" rows="5" maxlength="2000" placeholder="使用情况、购买时间、瑕疵与配件…"></textarea></label><label>图片地址（选填，每行一个，最多 9 张）<textarea v-model="urls" rows="3" placeholder="https://… 或 /static/…"></textarea></label><div class="actions"><button class="primary" :disabled="busy">{{busy?'保存中…':editing?'保存修改':'发布商品'}}</button><RouterLink class="button" to="/mine">取消</RouterLink></div></form></template>
+<template><div class="section-heading"><div><h1>{{editing?'编辑商品':'发布我的闲置'}}</h1></div></div><p v-if="loading" class="empty">加载中…</p><p v-if="error" class="error" role="alert">{{error}} <button v-if="!ready" @click="loadForm">重试</button></p><form v-if="ready" class="panel form-panel" @submit.prevent="submit"><label>商品标题<input v-model.trim="form.title" required maxlength="100" placeholder="例如：九成新高等数学教材"></label><div class="form-grid"><label>价格（元）<input v-model="form.price" type="number" required min="0.01" max="99999.99" step="0.01"></label><label>商品分类<select v-model="form.category_id" required><option disabled value="">请选择</option><option v-for="item in categories" :key="item.id" :value="item.id">{{item.name}}</option></select></label><label>成色<select v-model="form.condition_id" required><option disabled value="">请选择</option><option v-for="item in conditions" :key="item.id" :value="item.id">{{item.name}}</option></select></label><label>交易地点<select v-model="form.place_id"><option value="">双方商议</option><option v-for="item in places" :key="item.id" :value="item.id">{{item.name}}</option></select></label></div><label>商品描述<textarea v-model="form.description" rows="5" maxlength="2000" placeholder="使用情况、购买时间、瑕疵与配件…"></textarea></label><label>图片地址（选填，每行一个，最多 9 张）<textarea v-model="urls" rows="3" placeholder="https://… 或 /static/…"></textarea></label><div class="actions"><button class="primary" :disabled="busy">{{busy?'保存中…':editing?'保存修改':'发布商品'}}</button><RouterLink class="button" to="/mine">取消</RouterLink></div></form></template>
