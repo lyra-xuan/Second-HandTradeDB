@@ -12,6 +12,7 @@ from routers.product_router import router as product_router
 from routers.order_router import router as order_router
 from routers.favorite_router import router as favorite_router
 from routers.stats_router import router as stats_router
+from routers.admin_router import router as admin_router
 
 class DBSessionMiddleware(BaseHTTPMiddleware):
     """每个请求一个 Session，并把事务提交提前到响应发出之前。
@@ -76,6 +77,7 @@ app.include_router(product_router, prefix=API_PREFIX)
 app.include_router(order_router, prefix=API_PREFIX)
 app.include_router(favorite_router, prefix=API_PREFIX)
 app.include_router(stats_router, prefix=API_PREFIX)
+app.include_router(admin_router, prefix=API_PREFIX)
 
 
 @app.get("/")
