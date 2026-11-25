@@ -1,6 +1,9 @@
+from pathlib import Path
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy.exc import IntegrityError
 
@@ -13,6 +16,7 @@ from routers.order_router import router as order_router
 from routers.favorite_router import router as favorite_router
 from routers.stats_router import router as stats_router
 from routers.admin_router import router as admin_router
+from routers.upload_router import router as upload_router
 
 class DBSessionMiddleware(BaseHTTPMiddleware):
     """每个请求一个 Session，并把事务提交提前到响应发出之前。
@@ -78,6 +82,12 @@ app.include_router(order_router, prefix=API_PREFIX)
 app.include_router(favorite_router, prefix=API_PREFIX)
 app.include_router(stats_router, prefix=API_PREFIX)
 app.include_router(admin_router, prefix=API_PREFIX)
+app.include_router(upload_router, prefix=API_PREFIX)
+
+# 图片等静态资源：与前端开发代理 /static 对齐，上传接口返回的 URL 即可直接访问
+STATIC_DIR = Path(__file__).resolve().parent / "static"
+STATIC_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 
 @app.get("/")

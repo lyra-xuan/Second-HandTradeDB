@@ -27,7 +27,8 @@ backend/
 ├── models/          # SQLAlchemy ORM 模型（users、products、orders…）
 ├── schemas/         # Pydantic 请求/响应模型
 ├── repository/      # 数据访问层（每张表/聚合一个 Repository）
-├── routers/         # 路由层（auth / dict / product / order / favorite / stats / admin）
+├── routers/         # 路由层（auth / dict / product / order / favorite / stats / admin / upload）
+├── static/          # 静态资源根目录，uploads/ 存放上传的图片（运行期生成，不提交）
 ├── tests/           # 主链路冒烟测试（pytest）
 └── packaging/       # 打包配置（PyInstaller spec + 构建脚本）
 ```
@@ -139,6 +140,14 @@ HTTP → DBSessionMiddleware → 路由函数 → 依赖注入(get_current_user)
 | PATCH | `/admin/users/{user_id}/status` | 封禁(0)/解封(1)用户 |
 | GET | `/admin/logs?page=1&page_size=20` | 操作日志分页查询（按时间倒序） |
 
+### 图片上传 `/api/uploads`（登录）
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| POST | `/uploads` | 多图上传（`multipart/form-data`，字段名 `files`，最多 9 张、单张 ≤5MB，仅 jpg/png/webp/gif）；返回 `{result, urls}`（201） |
+
+上传成功返回的 `urls`（形如 `/static/uploads/xxx.png`）直接填入发布/编辑商品的 `images` 字段即可；图片通过 `/static` 静态目录对外访问。
+
 ## 关键技术实现（报告第六章素材）
 
 1. **三层架构解耦**：`routers → repository → models`。路由层无 SQL，Repository 无 HTTP 概念，便于单独测试与替换。
@@ -160,6 +169,7 @@ HTTP → DBSessionMiddleware → 路由函数 → 依赖注入(get_current_user)
 | 活跃卖家榜 | `GET /stats/sellers?limit=5` | `seller_id` / `nickname` / `on_sale_count` / `total_views` / `finished_orders` |
 | 分类成交分析 | `GET /stats/category-sales` | `category_name` / `deal_count` / `total_amount` / `avg_price` |
 | 管理员后台 | `PATCH /admin/users/{id}/status`、`GET /admin/logs` | 封禁/解封、操作日志分页 |
+| 发布/编辑商品传图 | `POST /uploads` | `urls[]`（填入 `images`，形如 `/static/uploads/xxx.png`） |
 
 金额字段为字符串化的 `Decimal`，展示前请用前端 `money()` 格式化。
 

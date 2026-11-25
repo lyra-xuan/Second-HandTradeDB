@@ -33,6 +33,9 @@ env/
 *.sqlite3
 *.sql.bak
 
+# ---- 运行期上传的图片（不提交） ----
+backend/static/uploads/
+
 # ---- IDE / 系统 ----
 .vscode/*
 !.vscode/extensions.json
